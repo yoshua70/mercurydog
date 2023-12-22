@@ -4,17 +4,31 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 )
 
 const DB_NAME string = "tau.db"
 
 var DbNameFlag string
+
+// cleanup function    remove the created database in case of error
+// cleanup function for when one or more steps of the initialization failed
+func cleanup(dbName string) error {
+	log.Printf("[INFO] one or more steps of the initialization failed, cleaning up...\n")
+	err := os.Remove(fmt.Sprintf("./%s", dbName))
+
+	if err != nil {
+		log.Printf("[ERROR] error while cleaning up: %v\n", err.Error())
+	}
+	return nil
+}
 
 func CreateDb(dbName string) error {
 	// Create the database with the provided name.
@@ -41,13 +55,55 @@ func CreateDb(dbName string) error {
 	}
 }
 
+func EnforceDbSchema(dbName string) error {
+	log.Printf("[INFO] enforcing db schema on database `%v`\n", dbName)
+
+	db, err := sql.Open("sqlite3", fmt.Sprintf("./%v", dbName))
+	if err != nil {
+		log.Printf("[ERROR] error while opening database file `%v`: %v\n", dbName, err.Error())
+		return err
+	}
+
+	stmt, err := db.Prepare(`CREATE TABLE IF NOT EXISTS jobs (
+id INTEGER UNIQUE,
+name TEXT UNIQUE,
+created_at DATE DEFAULT (datetime('now', 'localtime')),
+cmd TEXT,
+queue TEXT,
+PRIMARY KEY (id))
+`)
+
+	if err != nil {
+		log.Printf("[ERROR] error while preparing sql statement on database `%v`: %v\n", dbName, err.Error())
+		return err
+	}
+
+	res, err := stmt.Exec()
+
+	if err != nil {
+		log.Printf("[ERROR] error while executing sql statement on database `%v`: %v\n", dbName, err.Error())
+		return err
+	}
+
+	log.Printf("[INFO] successfully enforced db schema on database `%v`: %v\n", dbName, res)
+	return nil
+}
+
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize the application",
 	Long:  `Test the RabbitMQ connection and create the SQLite database.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		CreateDb(DbNameFlag)
+		err := CreateDb(DbNameFlag)
+		// Proceed to enforce the db schema if the database was created with
+		// no errors.
+		if err == nil {
+			dbSchemaErr := EnforceDbSchema(DbNameFlag)
+			if dbSchemaErr != nil {
+				cleanup(DbNameFlag)
+			}
+		}
 	},
 }
 
