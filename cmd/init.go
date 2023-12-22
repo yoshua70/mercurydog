@@ -35,7 +35,7 @@ func cleanup(dbName string) error {
 func CreateDb(dbName string) error {
 	if _, err := os.Stat(fmt.Sprintf("./%s", dbName)); err == nil {
 		log.Printf(
-			"ERROR] file `%s` already exists. Please remove it and re-run the command or proceed with the existing file.\n",
+			"[ERROR] file `%s` already exists. Please remove it and re-run the command or proceed with the existing file.\n",
 			dbName,
 		)
 		return errors.New(fmt.Sprintf("file `%s` already exists", dbName))
