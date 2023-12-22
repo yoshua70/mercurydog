@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -18,6 +15,8 @@ var (
 	JobDbNameFlag string
 )
 
+// createJob function  
+// Insert a new job in the database.
 func createJob(dbName string, jobName string, jobCmd string, jobQueue string) error {
 	db, err := sql.Open("sqlite3", fmt.Sprintf("./%s", dbName))
 	if err != nil {
