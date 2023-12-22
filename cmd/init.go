@@ -78,14 +78,14 @@ PRIMARY KEY (id))
 		return err
 	}
 
-	res, err := stmt.Exec()
+	_, err = stmt.Exec()
 
 	if err != nil {
 		log.Printf("[ERROR] error while executing sql statement on database `%v`: %v\n", dbName, err.Error())
 		return err
 	}
 
-	log.Printf("[INFO] successfully enforced db schema on database `%v`: %v\n", dbName, res)
+	log.Printf("[INFO] successfully enforced db schema on database `%v`\n", dbName)
 	return nil
 }
 
@@ -95,6 +95,7 @@ var initCmd = &cobra.Command{
 	Short: "Initialize the application",
 	Long:  `Test the RabbitMQ connection and create the SQLite database.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		err := CreateDb(DbNameFlag)
 		// Proceed to enforce the db schema if the database was created with
 		// no errors.
@@ -110,6 +111,9 @@ var initCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(initCmd)
 
+	// TODO: Check for the existing of a `.conf` file before proceeding.
+	// If the file exists, check for the default value of the required flag
+	// in the file.
 	initCmd.Flags().StringVarP(&DbNameFlag, "database", "d", DB_NAME, "the name of the SQLite database to be used with the file extension.")
 
 	// Here you will define your flags and configuration settings.
