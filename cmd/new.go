@@ -1,6 +1,3 @@
-/*
-Copyright © 2023 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -11,21 +8,20 @@ import (
 var newCmd = &cobra.Command{
 	Use:   "new",
 	Short: "Create a new job or a new pipeline",
-	Long:  `A command to register a new job or a new pipeline.`,
+	Long: `A command to create a new job or a new pipeline.
+
+The command has no use on its own but has two subcommands: 'job' and 'pipeline'
+Use the subcommand 'job' or 'pipeline' to create a new job or a new pipeline respectively.
+
+Examples:
+  mercuryfox new job [flags]
+  mercuryfox new pipeline [flags]
+`,
+
 	Run: func(cmd *cobra.Command, args []string) {
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(newCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// newCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// newCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
