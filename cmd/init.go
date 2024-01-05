@@ -11,16 +11,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const DB_NAME string = "tau.db"
+const DEFAULT_DB_NAME string = "tau.db"
 
-var DbNameFlag string
+var DbPathFlag string
 
 // cleanup function  
 // Remove the created database in case an error occurs while initializating
 // the application.
-func cleanup(dbName string) error {
+func cleanup(dbPath string) error {
 	log.Printf("[INFO] one or more steps of the initialization failed, cleaning up...\n")
-	err := os.Remove(fmt.Sprintf("./%s", dbName))
+	err := os.Remove(dbPath)
 	if err != nil {
 		log.Printf("[ERROR] error while cleaning up: %v\n", err.Error())
 	}
@@ -28,41 +28,29 @@ func cleanup(dbName string) error {
 }
 
 // CreateDb function  
-// Create the database with the provided name.
+// Create the database with the provided path.
 // Check if the database file already exists, if so return an error
 // as we do not want to erase user's data.
 // Otherwise create the database file and return nil.
-func CreateDb(dbName string) error {
-	if _, err := os.Stat(fmt.Sprintf("./%s", dbName)); err == nil {
-		log.Printf(
-			"[ERROR] file `%s` already exists. Please remove it and re-run the command or proceed with the existing file.\n",
-			dbName,
-		)
-		return errors.New(fmt.Sprintf("file `%s` already exists", dbName))
+func CreateDb(dbPath string) error {
+	if _, err := os.Stat(dbPath); err == nil {
+		// log.Printf("[ERROR] file `%s` already exists. Please remove it and re-run the command or proceed with the existing file.\n", dbPath)
+		return errors.New(fmt.Sprintf("file `%s` already exists", dbPath))
 	} else if errors.Is(err, os.ErrNotExist) {
-		_, err := os.Create(fmt.Sprintf("./%s", dbName))
+		_, err := os.Create(dbPath)
 
-		if err == nil {
-			log.Printf("[INFO] successfully created database file `%s`\n", dbName)
-		} else {
-			log.Printf("[ERROR] unable to create database file `%s`: %s\n", dbName, err.Error())
-		}
 		return err
 	} else {
 		// Schrodinger case: file may or may not exist, disk failure, wrong permissions...
-		log.Printf("[ERROR] unknown error while creating file `%s`, please check error for details: %s", dbName, err.Error())
 		return err
 	}
 }
 
 // EnforceDbSchema function  
 // Create the necessary tables in the database for the application to run.
-func EnforceDbSchema(dbName string) error {
-	log.Printf("[INFO] enforcing db schema on database `%v`\n", dbName)
-
-	db, err := sql.Open("sqlite3", fmt.Sprintf("./%v", dbName))
+func EnforceDbSchema(dbPath string) error {
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		log.Printf("[ERROR] error while opening database file `%v`: %v\n", dbName, err.Error())
 		return err
 	}
 
@@ -75,18 +63,18 @@ queue TEXT,
 PRIMARY KEY (id))
 `)
 	if err != nil {
-		log.Printf("[ERROR] error while preparing sql statement on database `%v`: %v\n", dbName, err.Error())
+		// log.Printf("[ERROR] error while preparing sql statement on database `%v`: %v\n", dbPath, err.Error())
 		return err
 	}
 
 	_, err = stmt.Exec()
 
 	if err != nil {
-		log.Printf("[ERROR] error while executing sql statement on database `%v`: %v\n", dbName, err.Error())
+		// log.Printf("[ERROR] error while executing sql statement on database `%v`: %v\n", dbPath, err.Error())
 		return err
 	}
 
-	log.Printf("[INFO] successfully enforced db schema on database `%v`\n", dbName)
+	// log.Printf("[INFO] successfully enforced db schema on database `%v`\n", dbPath)
 	return nil
 }
 
@@ -99,13 +87,13 @@ var initCmd = &cobra.Command{
 This command creates the database along with the necessary tables.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Test the connection to RabbitMQ
-		err := CreateDb(DbNameFlag)
+		err := CreateDb(DbPathFlag)
 		// Proceed to enforce the db schema if the database was created with
 		// no errors.
 		if err == nil {
-			dbSchemaErr := EnforceDbSchema(DbNameFlag)
+			dbSchemaErr := EnforceDbSchema(DbPathFlag)
 			if dbSchemaErr != nil {
-				cleanup(DbNameFlag)
+				cleanup(DbPathFlag)
 			}
 		}
 	},
@@ -118,5 +106,5 @@ func init() {
 	// If the file exists, check for the default value of the required flag
 	// in the file.
 	initCmd.Flags().
-		StringVarP(&DbNameFlag, "database", "d", DB_NAME, "the name of the SQLite database to be used with the file extension.")
+		StringVarP(&DbPathFlag, "database", "d", DEFAULT_DB_NAME, "the path to the SQLite database to be used with the file extension.")
 }
